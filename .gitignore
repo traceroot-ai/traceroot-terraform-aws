@@ -1,0 +1,9 @@
+# Never commit values or state — they contain live credentials.
+*.tfvars
+!*.tfvars.example
+*.tfstate
+*.tfstate.*
+terraform.tfstate.d/
+.terraform/
+tfplan*
+*.tfplan

@@ -1,0 +1,46 @@
+# traceroot-terraform-aws
+
+Terraform module to deploy [TraceRoot](https://github.com/traceroot-ai/traceroot) on AWS.
+
+Provisions the VPC, EKS cluster, RDS (PostgreSQL), ElastiCache (Redis), ECR, S3, EFS, ACM and
+ALB ingress, then installs the
+[traceroot Helm chart](https://github.com/traceroot-ai/traceroot-k8s) into the cluster.
+
+## Usage
+
+```hcl
+module "traceroot" {
+  source = "github.com/traceroot-ai/traceroot-terraform-aws?ref=v1.0.0"
+
+  environment = "production"
+  name        = "traceroot-production"
+  aws_region  = "us-east-1"
+  vpc_cidr    = "10.0.0.0/16"
+  domain      = "traceroot.example.com"
+  image_tag   = "sha-1a321eb"
+
+  traceroot_helm_chart_version = "1.0.0"
+}
+```
+
+Pin `ref` to a tag rather than tracking `main`, so environments upgrade deliberately.
+
+See [`examples/quickstart`](examples/quickstart) for a runnable example and
+[`variables.tf`](variables.tf) for every input.
+
+## Secrets
+
+This module **generates** the application's internal secrets (session signing, internal API,
+database and cache passwords) with `random_password`, and writes them into Kubernetes Secrets.
+Values you supply — Stripe, GitHub App, LLM provider keys — are passed as variables.
+
+Terraform state therefore contains secret material. Use a remote backend with encryption at
+rest, and never commit `.tfvars` or state files.
+
+## Requirements
+
+| | |
+|---|---|
+| Terraform | >= 1.5 |
+| AWS provider | >= 5.0 |
+| Permissions | ability to create VPC, EKS, RDS, ElastiCache, ECR, S3, EFS, IAM, ACM, Route53 |
