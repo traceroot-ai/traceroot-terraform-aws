@@ -366,3 +366,16 @@ variable "access_entries" {
   type        = any
   default     = {}
 }
+
+variable "kms_key_administrators" {
+  description = <<-EOT
+    IAM principal ARNs that administer the EKS KMS key.
+
+    Empty (the default) hands administration to whichever identity runs
+    Terraform, which is fine when that is always the same one. When several
+    apply — a person and a CI role, say — the key policy is rewritten on every
+    apply and every plan shows a diff. List them explicitly in that case.
+  EOT
+  type        = list(string)
+  default     = []
+}
