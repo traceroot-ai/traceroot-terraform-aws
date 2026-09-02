@@ -18,6 +18,10 @@ module "eks" {
 
   access_entries = var.access_entries
 
+  # Empty falls back to the calling identity, so the key policy names whoever
+  # applied last and flips on every apply by a different principal.
+  kms_key_administrators = var.kms_key_administrators
+
   # Fargate profiles — no EC2 nodes to manage
   fargate_profiles = {
     for ns in local.fargate_namespaces : ns => {
