@@ -14,7 +14,9 @@ module "eks" {
   cluster_endpoint_public_access = true
 
   # Grant cluster creator admin access (required for kubectl)
-  enable_cluster_creator_admin_permissions = true
+  enable_cluster_creator_admin_permissions = var.enable_cluster_creator_admin_permissions
+
+  access_entries = var.access_entries
 
   # Fargate profiles — no EC2 nodes to manage
   fargate_profiles = {

@@ -343,3 +343,26 @@ variable "additional_env" {
     error_message = "Each environment variable must have either 'value' or 'valueFrom' specified, but not both."
   }
 }
+
+variable "enable_cluster_creator_admin_permissions" {
+  description = <<-EOT
+    Grant Kubernetes cluster-admin to the identity that runs Terraform.
+
+    True is right when one identity always applies. Set false when more than one
+    does — otherwise whoever applies last replaces the previous one's access
+    entry, removing their kubectl access. Declare `access_entries` instead.
+  EOT
+  type        = bool
+  default     = true
+}
+
+variable "access_entries" {
+  description = <<-EOT
+    EKS access entries, passed through to the upstream EKS module. See its
+    documentation for the shape. Use together with
+    enable_cluster_creator_admin_permissions = false to state cluster access
+    explicitly rather than inferring it from the caller.
+  EOT
+  type        = any
+  default     = {}
+}
