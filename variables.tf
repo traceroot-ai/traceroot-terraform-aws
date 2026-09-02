@@ -378,4 +378,9 @@ variable "kms_key_administrators" {
   EOT
   type        = list(string)
   default     = []
+
+  validation {
+    condition     = alltrue([for a in var.kms_key_administrators : startswith(a, "arn:")])
+    error_message = "Each entry must be a full IAM principal ARN, e.g. arn:aws:iam::123456789012:role/example. A bare role name or account id is rejected here rather than failing later with an opaque KMS policy error."
+  }
 }
