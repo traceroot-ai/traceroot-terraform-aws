@@ -6,6 +6,12 @@ variable "name" {
   default     = "traceroot"
 }
 
+variable "manage_app_secrets" {
+  description = "When true (default), the module generates app secrets and creates the Kubernetes Secrets itself (turnkey self-hosting). Set false to provide app secrets externally (e.g. External Secrets Operator); the module then creates none of the app Secrets and generates none of the app-only values. Infrastructure passwords (RDS/ElastiCache) are always managed regardless."
+  type        = bool
+  default     = true
+}
+
 variable "environment" {
   description = "Environment name — controls namespace (traceroot-{env}) and database (traceroot_{env}). Use Terraform workspaces to isolate state per environment."
   type        = string
