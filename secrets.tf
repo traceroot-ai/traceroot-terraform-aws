@@ -1,24 +1,38 @@
-# deploy/terraform/aws/secrets.tf
-# Kubernetes namespace and secrets for the active environment.
+# secrets.tf
+# Kubernetes namespace and application secrets for the active environment.
 # Environment is controlled by var.environment (e.g. "staging", "production").
-# Use Terraform workspaces to maintain separate state per environment.
+#
+# var.manage_app_secrets (default true) selects how app secrets are delivered:
+#   true  — this module generates the app secrets and writes the Kubernetes
+#           Secrets itself. The turnkey, self-hosting path (unchanged behaviour).
+#   false — the module creates none of the app Secrets and generates none of the
+#           app-only values. Bring your own delivery (e.g. External Secrets
+#           Operator syncing from a secret manager). The Helm chart still
+#           references the same Secret names; the operator provides them.
+#
+# Infrastructure passwords (RDS/ElastiCache — rds.tf/elasticache.tf) are always
+# managed here regardless, since the module owns those data stores.
 
 resource "random_password" "better_auth_secret" {
+  count   = var.manage_app_secrets ? 1 : 0
   length  = 64
   special = false
 }
 
 resource "random_password" "internal_api_secret" {
+  count   = var.manage_app_secrets ? 1 : 0
   length  = 32
   special = false
 }
 
 resource "random_password" "clickhouse" {
+  count   = var.manage_app_secrets ? 1 : 0
   length  = 32
   special = false
 }
 
 resource "random_id" "encryption_key" {
+  count       = var.manage_app_secrets ? 1 : 0
   byte_length = 32 # 32 bytes = 64 hex characters = 256 bits
 }
 
@@ -26,11 +40,12 @@ resource "random_id" "encryption_key" {
 # install flows (state tokens are short-lived); already-stored bot tokens are
 # unaffected.
 resource "random_password" "slack_state_secret" {
+  count   = var.manage_app_secrets ? 1 : 0
   length  = 64
   special = false
 }
 
-# Namespace for this environment
+# Namespace for this environment (always managed)
 resource "kubernetes_namespace" "app" {
   metadata { name = local.namespace }
   depends_on = [module.eks]
@@ -38,6 +53,8 @@ resource "kubernetes_namespace" "app" {
 
 # Core secrets
 resource "kubernetes_secret" "app" {
+  count = var.manage_app_secrets ? 1 : 0
+
   metadata {
     name      = "traceroot"
     namespace = kubernetes_namespace.app.metadata[0].name
@@ -46,12 +63,12 @@ resource "kubernetes_secret" "app" {
   data = {
     "postgres-password"   = random_password.postgres.result
     "redis-password"      = random_password.redis.result
-    "better-auth-secret"  = random_password.better_auth_secret.result
-    "internal-api-secret" = random_password.internal_api_secret.result
-    "clickhouse-password" = random_password.clickhouse.result
+    "better-auth-secret"  = random_password.better_auth_secret[0].result
+    "internal-api-secret" = random_password.internal_api_secret[0].result
+    "clickhouse-password" = random_password.clickhouse[0].result
     "database-url"        = "postgresql://traceroot:${random_password.postgres.result}@${aws_rds_cluster.postgres.endpoint}:5432/${local.database_name}"
     "redis-url"           = "rediss://:${random_password.redis.result}@${aws_elasticache_replication_group.redis.primary_endpoint_address}:6379/0"
-    "encryption-key"      = random_id.encryption_key.hex
+    "encryption-key"      = random_id.encryption_key[0].hex
   }
 
   depends_on = [module.eks]
@@ -59,7 +76,7 @@ resource "kubernetes_secret" "app" {
 
 # GitHub App secret (conditional — only if github_app_id is provided)
 resource "kubernetes_secret" "github" {
-  count = var.github_app_id != "" ? 1 : 0
+  count = var.manage_app_secrets && var.github_app_id != "" ? 1 : 0
 
   metadata {
     name      = "traceroot-github"
@@ -80,7 +97,7 @@ resource "kubernetes_secret" "github" {
 
 # LLM API keys secret (conditional — only if any key is provided)
 resource "kubernetes_secret" "llm_keys" {
-  count = var.anthropic_api_key != "" || var.openai_api_key != "" ? 1 : 0
+  count = var.manage_app_secrets && (var.anthropic_api_key != "" || var.openai_api_key != "") ? 1 : 0
 
   metadata {
     name      = "traceroot-llm-keys"
@@ -98,7 +115,7 @@ resource "kubernetes_secret" "llm_keys" {
 
 # Stripe secret (conditional)
 resource "kubernetes_secret" "stripe" {
-  count = var.stripe_secret_key != "" ? 1 : 0
+  count = var.manage_app_secrets && var.stripe_secret_key != "" ? 1 : 0
 
   metadata {
     name      = "traceroot-stripe"
@@ -119,10 +136,8 @@ resource "kubernetes_secret" "stripe" {
 }
 
 # Slack OAuth secret (conditional — only if slack_client_id is provided).
-# State secret is auto-generated; redirect URI is computed from var.domain so
-# the operator only needs to register the Slack App with the same path.
 resource "kubernetes_secret" "slack" {
-  count = var.slack_client_id != "" && var.slack_client_secret != "" && var.domain != "" ? 1 : 0
+  count = var.manage_app_secrets && var.slack_client_id != "" && var.slack_client_secret != "" && var.domain != "" ? 1 : 0
 
   metadata {
     name      = "traceroot-slack"
@@ -132,7 +147,7 @@ resource "kubernetes_secret" "slack" {
   data = {
     "slack-client-id"     = var.slack_client_id
     "slack-client-secret" = var.slack_client_secret
-    "slack-state-secret"  = random_password.slack_state_secret.result
+    "slack-state-secret"  = random_password.slack_state_secret[0].result
     "slack-redirect-uri"  = var.domain != "" ? "https://${var.domain}/api/slack/oauth/callback" : ""
   }
 
@@ -141,7 +156,7 @@ resource "kubernetes_secret" "slack" {
 
 # Google OAuth secret (conditional)
 resource "kubernetes_secret" "google_oauth" {
-  count = var.google_oauth_client_id != "" ? 1 : 0
+  count = var.manage_app_secrets && var.google_oauth_client_id != "" ? 1 : 0
 
   metadata {
     name      = "traceroot-google-oauth"
@@ -158,7 +173,7 @@ resource "kubernetes_secret" "google_oauth" {
 
 # SMTP secret (conditional)
 resource "kubernetes_secret" "smtp" {
-  count = var.smtp_url != "" ? 1 : 0
+  count = var.manage_app_secrets && var.smtp_url != "" ? 1 : 0
 
   metadata {
     name      = "traceroot-smtp"
@@ -175,7 +190,7 @@ resource "kubernetes_secret" "smtp" {
 
 # Enterprise license secret (conditional)
 resource "kubernetes_secret" "enterprise" {
-  count = var.enterprise_license_key != "" ? 1 : 0
+  count = var.manage_app_secrets && var.enterprise_license_key != "" ? 1 : 0
 
   metadata {
     name      = "traceroot-enterprise"
