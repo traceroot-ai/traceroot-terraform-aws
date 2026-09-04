@@ -106,6 +106,12 @@ variable "enable_clickhouse_log_tables" {
   default     = false
 }
 
+variable "enable_sql_gateway" {
+  description = "Provision the ClickHouse identities the public SQL gateway needs: a writer that owns the curated read-only views and a least-privileged user that customer SQL runs as. Disabled by default. Enabling creates database users and grants the ClickHouse admin access management, which is required to create them and to set the views' definer."
+  type        = bool
+  default     = false
+}
+
 variable "clickhouse_namespace" {
   description = "Kubernetes namespace where ClickHouse will be deployed. Defaults to traceroot-{environment}."
   type        = string

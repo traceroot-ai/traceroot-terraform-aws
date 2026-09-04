@@ -260,6 +260,26 @@ clickhouse:
         <latency_log remove="1"/>
       </clickhouse>
 EOT
+
+  # The public SQL gateway runs customer SQL as a dedicated least-privileged
+  # ClickHouse user against curated views owned by a separate writer, rather than
+  # as the admin. Creating those identities, and setting the views' definer,
+  # requires access management, which the stock admin does not carry. It is a
+  # subchart setting, so the chart cannot switch it on from its own flag and it
+  # is supplied here alongside it. The username matches clickhouse.auth.username.
+  sql_gateway_values = !var.enable_sql_gateway ? "" : <<EOT
+sqlGateway:
+  enabled: true
+clickhouse:
+  usersExtraOverrides: |
+      <clickhouse>
+        <users>
+          <default>
+            <access_management>1</access_management>
+          </default>
+        </users>
+      </clickhouse>
+EOT
 }
 
 resource "helm_release" "traceroot" {
@@ -286,6 +306,7 @@ resource "helm_release" "traceroot" {
     local.feature_values,
     local.additional_env_values,
     local.clickhouse_log_table_overrides,
+    local.sql_gateway_values,
   ])
 
   # Ensure global.security.allowInsecureImages is set for bitnamilegacy images
