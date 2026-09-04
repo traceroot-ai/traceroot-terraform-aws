@@ -86,6 +86,7 @@ cache_node_type = "cache.t4g.micro"
 
 # Feature Flags
 # enable_billing = "true"  # Set "false" for self-hosted to unlock all features
+# enable_sql_gateway = false  # Provision the ClickHouse identities the public SQL gateway needs
 
 # Replicas
 # web_replicas    = 1
