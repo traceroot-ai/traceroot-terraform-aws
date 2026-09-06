@@ -106,8 +106,14 @@ variable "enable_clickhouse_log_tables" {
   default     = false
 }
 
+variable "clickhouse_admin_access_management" {
+  description = "Grant the ClickHouse admin access management. Required by enable_sql_gateway, and separable from it on purpose: the grant is delivered through the ClickHouse StatefulSet, which Helm updates only AFTER its pre-upgrade hooks have run. On a cluster that is already running, enabling both at once means the provisioning hook executes against a pod that does not have the grant yet, fails, and aborts the upgrade before the grant is ever applied. Set this alone first, apply, let the pod roll, then set enable_sql_gateway. A fresh install can set both together."
+  type        = bool
+  default     = false
+}
+
 variable "enable_sql_gateway" {
-  description = "Provision the ClickHouse identities the public SQL gateway needs: a writer that owns the curated read-only views and a least-privileged user that customer SQL runs as. Disabled by default. Enabling creates database users and grants the ClickHouse admin access management, which is required to create them and to set the views' definer."
+  description = "Provision the ClickHouse identities the public SQL gateway needs: a writer that owns the curated read-only views and a least-privileged user that customer SQL runs as. Disabled by default. Requires clickhouse_admin_access_management, and a chart version that carries the provisioning hooks. When app secrets are delivered externally, the writer and read-only passwords must already exist in that source under the keys the chart reads; the module generates them only on the turnkey path."
   type        = bool
   default     = false
 }

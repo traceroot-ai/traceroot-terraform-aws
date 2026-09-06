@@ -264,12 +264,18 @@ EOT
   # The public SQL gateway runs customer SQL as a dedicated least-privileged
   # ClickHouse user against curated views owned by a separate writer, rather than
   # as the admin. Creating those identities, and setting the views' definer,
-  # requires access management, which the stock admin does not carry. It is a
-  # subchart setting, so the chart cannot switch it on from its own flag and it
-  # is supplied here alongside it. The username matches clickhouse.auth.username.
-  sql_gateway_values = !var.enable_sql_gateway ? "" : <<EOT
-sqlGateway:
-  enabled: true
+  # requires access management, which the stock admin does not carry.
+  #
+  # These are two documents, not one, and the split is load-bearing. The grant is
+  # a ClickHouse subchart setting delivered through the StatefulSet, which Helm
+  # updates only after its pre-upgrade hooks have already run. Emitting both at
+  # once on a running cluster means the provisioning hook runs against a pod
+  # without the grant, fails, and aborts the upgrade before the grant is applied
+  # -- with no way out through Terraform. Kept separate, the grant can be landed
+  # and rolled first. The precondition on helm_release keeps the steady state
+  # consistent, so the two cannot silently drift apart.
+  # The username matches clickhouse.auth.username.
+  clickhouse_access_management_values = !var.clickhouse_admin_access_management ? "" : <<EOT
 clickhouse:
   usersExtraOverrides: |
       <clickhouse>
@@ -280,6 +286,18 @@ clickhouse:
         </users>
       </clickhouse>
 EOT
+
+  sql_gateway_values = !var.enable_sql_gateway ? "" : <<EOT
+sqlGateway:
+  enabled: true
+EOT
+
+  # Parsed leniently: a version this cannot read is left alone rather than blocked.
+  _chart_version_parts = regexall("^v?(\\d+)\\.(\\d+)", var.traceroot_helm_chart_version)
+  chart_carries_sql_gateway = length(local._chart_version_parts) == 0 ? true : (
+    tonumber(local._chart_version_parts[0][0]) > 1 ||
+    (tonumber(local._chart_version_parts[0][0]) == 1 && tonumber(local._chart_version_parts[0][1]) >= 1)
+  )
 }
 
 resource "helm_release" "traceroot" {
@@ -306,6 +324,7 @@ resource "helm_release" "traceroot" {
     local.feature_values,
     local.additional_env_values,
     local.clickhouse_log_table_overrides,
+    local.clickhouse_access_management_values,
     local.sql_gateway_values,
   ])
 
@@ -313,6 +332,25 @@ resource "helm_release" "traceroot" {
   set {
     name  = "global.security.allowInsecureImages"
     value = "true"
+  }
+
+  lifecycle {
+    # The grant has to be on the ClickHouse pod before the hook that needs it, and
+    # Helm cannot do both in one upgrade. Caught at plan time rather than as a
+    # failed hook that aborts the release with no way forward.
+    precondition {
+      condition     = !var.enable_sql_gateway || var.clickhouse_admin_access_management
+      error_message = "enable_sql_gateway requires clickhouse_admin_access_management. On a running cluster, set clickhouse_admin_access_management alone first and apply, so the ClickHouse pod rolls with the grant; then set enable_sql_gateway and apply again."
+    }
+
+    # Older charts have no sqlGateway key. Helm silently drops values a chart does
+    # not declare, so without this the flag would appear to apply while delivering
+    # no gateway at all -- having granted access management and written two unused
+    # passwords on the way.
+    precondition {
+      condition     = !var.enable_sql_gateway || local.chart_carries_sql_gateway
+      error_message = "enable_sql_gateway requires a traceroot chart that provides the provisioning hooks (1.1.0 or later); ${var.traceroot_helm_chart_version} would silently ignore it."
+    }
   }
 
   depends_on = [
