@@ -384,3 +384,9 @@ variable "kms_key_administrators" {
     error_message = "Each entry must be a full IAM principal ARN, e.g. arn:aws:iam::123456789012:role/example. A bare role name or account id is rejected here rather than failing later with an opaque KMS policy error."
   }
 }
+
+variable "eks_log_retention_in_days" {
+  description = "Retention for the EKS control-plane CloudWatch log group (/aws/eks/<name>/cluster). 365 satisfies the SOC 2 one-year log retention control."
+  type        = number
+  default     = 365
+}

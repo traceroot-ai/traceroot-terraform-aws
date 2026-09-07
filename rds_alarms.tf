@@ -57,3 +57,22 @@ resource "aws_cloudwatch_metric_alarm" "postgres_disk_queue_depth" {
   ok_actions          = [aws_sns_topic.postgres_alarms.arn]
   treat_missing_data  = "notBreaching"
 }
+
+# Aurora does not publish FreeStorageSpace (cluster storage grows on its own);
+# the per-instance equivalent is FreeLocalStorage — the temp/local volume that
+# sorts, joins and temporary tables spill into. Running it dry fails queries.
+resource "aws_cloudwatch_metric_alarm" "postgres_free_local_storage" {
+  alarm_name          = "${var.name}-postgres-free-local-storage-low"
+  alarm_description   = "RDS ${aws_rds_cluster_instance.postgres.identifier} free local (temp) storage below 1 GiB for 15 minutes."
+  comparison_operator = "LessThanThreshold"
+  metric_name         = "FreeLocalStorage"
+  namespace           = "AWS/RDS"
+  period              = 300
+  statistic           = "Average"
+  threshold           = 1073741824
+  evaluation_periods  = 3
+  dimensions          = { DBInstanceIdentifier = aws_rds_cluster_instance.postgres.identifier }
+  alarm_actions       = [aws_sns_topic.postgres_alarms.arn]
+  ok_actions          = [aws_sns_topic.postgres_alarms.arn]
+  treat_missing_data  = "notBreaching"
+}
