@@ -7,6 +7,10 @@ module "eks" {
   cluster_name    = var.name
   cluster_version = var.kubernetes_version
 
+  # Control-plane logs (audit/api/authenticator) go to /aws/eks/<name>/cluster.
+  # The upstream default is 90 days; SOC 2 wants a year.
+  cloudwatch_log_group_retention_in_days = var.eks_log_retention_in_days
+
   vpc_id     = module.vpc.vpc_id
   subnet_ids = module.vpc.private_subnets
 
