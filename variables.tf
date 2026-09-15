@@ -54,6 +54,18 @@ variable "fargate_profile_namespaces" {
   default     = ["kube-system", "default"]
 }
 
+# --- ECR ---
+variable "ecr_image_retention_count" {
+  description = "Number of images (manifests) to keep per ECR repository; older ones are expired by the lifecycle policy. Each push may store more than one manifest."
+  type        = number
+  default     = 10
+
+  validation {
+    condition     = var.ecr_image_retention_count >= 1
+    error_message = "ecr_image_retention_count must be at least 1."
+  }
+}
+
 # --- RDS ---
 variable "postgres_min_capacity" {
   description = "Aurora Serverless v2 minimum ACUs"
