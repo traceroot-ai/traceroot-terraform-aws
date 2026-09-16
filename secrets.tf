@@ -31,15 +31,17 @@ resource "random_password" "clickhouse" {
   special = false
 }
 
-# SQL-gateway identities. Only generated on the turnkey path: when app secrets
-# are delivered externally the writer and read-only passwords come from there
-# with the rest, and when the gateway is off nothing consumes them.
-resource "random_password" "clickhouse_sql_gateway_writer" {
-  count   = var.manage_app_secrets && var.enable_sql_gateway ? 1 : 0
-  length  = 32
-  special = false
-}
-
+# The account customer SQL runs as. Only generated on the turnkey path: when app
+# secrets are delivered externally this password comes from there with the rest,
+# and when the gateway is off nothing consumes it.
+#
+# There is deliberately no password for the account that owns the curated views.
+# Nothing ever authenticates as it: the views are SQL SECURITY DEFINER, so
+# ClickHouse runs the view body under that account's grants and never asks for a
+# password. The chart generates one in its provisioning hook and discards it.
+# Generating one here would put a credential able to read every project's raw
+# rows, including the columns the curated views omit, into a Secret for nothing
+# to use.
 resource "random_password" "clickhouse_sql_gateway_ro" {
   count   = var.manage_app_secrets && var.enable_sql_gateway ? 1 : 0
   length  = 32
@@ -86,8 +88,7 @@ resource "kubernetes_secret" "app" {
     "encryption-key"      = random_id.encryption_key[0].hex
     },
     var.enable_sql_gateway ? {
-      "clickhouse-writer-password" = random_password.clickhouse_sql_gateway_writer[0].result
-      "clickhouse-ro-password"     = random_password.clickhouse_sql_gateway_ro[0].result
+      "clickhouse-ro-password" = random_password.clickhouse_sql_gateway_ro[0].result
     } : {}
   )
 

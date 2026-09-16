@@ -262,7 +262,7 @@ clickhouse:
 EOT
 
   # The public SQL gateway runs customer SQL as a dedicated least-privileged
-  # ClickHouse user against curated views owned by a separate writer, rather than
+  # ClickHouse user against curated views owned by a separate account, rather than
   # as the admin. Creating those identities and setting the views' definer needs
   # CREATE USER and SET DEFINER, which the bundled ClickHouse admin already holds
   # -- verified against the image the chart deploys -- so nothing has to be
