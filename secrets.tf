@@ -31,6 +31,23 @@ resource "random_password" "clickhouse" {
   special = false
 }
 
+# The account customer SQL runs as. Only generated on the turnkey path: when app
+# secrets are delivered externally this password comes from there with the rest,
+# and when the gateway is off nothing consumes it.
+#
+# There is deliberately no password for the account that owns the curated views.
+# Nothing ever authenticates as it: the views are SQL SECURITY DEFINER, so
+# ClickHouse runs the view body under that account's grants and never asks for a
+# password. The chart generates one in its provisioning hook and discards it.
+# Generating one here would put a credential able to read every project's raw
+# rows, including the columns the curated views omit, into a Secret for nothing
+# to use.
+resource "random_password" "clickhouse_sql_gateway_ro" {
+  count   = var.manage_app_secrets && var.enable_sql_gateway ? 1 : 0
+  length  = 32
+  special = false
+}
+
 resource "random_id" "encryption_key" {
   count       = var.manage_app_secrets ? 1 : 0
   byte_length = 32 # 32 bytes = 64 hex characters = 256 bits
@@ -60,7 +77,7 @@ resource "kubernetes_secret" "app" {
     namespace = kubernetes_namespace.app.metadata[0].name
   }
 
-  data = {
+  data = merge({
     "postgres-password"   = random_password.postgres.result
     "redis-password"      = random_password.redis.result
     "better-auth-secret"  = random_password.better_auth_secret[0].result
@@ -69,7 +86,11 @@ resource "kubernetes_secret" "app" {
     "database-url"        = "postgresql://traceroot:${random_password.postgres.result}@${aws_rds_cluster.postgres.endpoint}:5432/${local.database_name}"
     "redis-url"           = "rediss://:${random_password.redis.result}@${aws_elasticache_replication_group.redis.primary_endpoint_address}:6379/0"
     "encryption-key"      = random_id.encryption_key[0].hex
-  }
+    },
+    var.enable_sql_gateway ? {
+      "clickhouse-ro-password" = random_password.clickhouse_sql_gateway_ro[0].result
+    } : {}
+  )
 
   depends_on = [module.eks]
 }

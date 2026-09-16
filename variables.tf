@@ -118,6 +118,12 @@ variable "enable_clickhouse_log_tables" {
   default     = false
 }
 
+variable "enable_sql_gateway" {
+  description = "Provision the ClickHouse identities the public SQL gateway needs: an account that owns the curated read-only views and a least-privileged user that customer SQL runs as. Disabled by default. Requires a chart version that carries the provisioning hooks. When app secrets are delivered externally, the read-only password must already exist in that source under the key the chart reads (clickhouse-ro-password); the module generates it only on the turnkey path. The view owner needs no password, since nothing authenticates as it."
+  type        = bool
+  default     = false
+}
+
 variable "clickhouse_namespace" {
   description = "Kubernetes namespace where ClickHouse will be deployed. Defaults to traceroot-{environment}."
   type        = string

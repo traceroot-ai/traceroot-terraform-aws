@@ -260,6 +260,24 @@ clickhouse:
         <latency_log remove="1"/>
       </clickhouse>
 EOT
+
+  # The public SQL gateway runs customer SQL as a dedicated least-privileged
+  # ClickHouse user against curated views owned by a separate account, rather than
+  # as the admin. Creating those identities and setting the views' definer needs
+  # CREATE USER and SET DEFINER, which the bundled ClickHouse admin already holds
+  # -- verified against the image the chart deploys -- so nothing has to be
+  # granted here first, and no ClickHouse restart is involved in enabling this.
+  sql_gateway_values = !var.enable_sql_gateway ? "" : <<EOT
+sqlGateway:
+  enabled: true
+EOT
+
+  # Parsed leniently: a version this cannot read is left alone rather than blocked.
+  _chart_version_parts = regexall("^v?(\\d+)\\.(\\d+)", var.traceroot_helm_chart_version)
+  chart_carries_sql_gateway = length(local._chart_version_parts) == 0 ? true : (
+    tonumber(local._chart_version_parts[0][0]) > 1 ||
+    (tonumber(local._chart_version_parts[0][0]) == 1 && tonumber(local._chart_version_parts[0][1]) >= 1)
+  )
 }
 
 resource "helm_release" "traceroot" {
@@ -286,12 +304,24 @@ resource "helm_release" "traceroot" {
     local.feature_values,
     local.additional_env_values,
     local.clickhouse_log_table_overrides,
+    local.sql_gateway_values,
   ])
 
   # Ensure global.security.allowInsecureImages is set for bitnamilegacy images
   set {
     name  = "global.security.allowInsecureImages"
     value = "true"
+  }
+
+  lifecycle {
+    # Older charts have no sqlGateway key. Helm silently drops values a chart does
+    # not declare, so without this the flag would appear to apply while delivering
+    # no gateway at all -- having granted access management and written two unused
+    # passwords on the way.
+    precondition {
+      condition     = !var.enable_sql_gateway || local.chart_carries_sql_gateway
+      error_message = "enable_sql_gateway requires a traceroot chart that provides the provisioning hooks (1.1.0 or later); ${var.traceroot_helm_chart_version} would silently ignore it."
+    }
   }
 
   depends_on = [
