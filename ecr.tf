@@ -18,7 +18,7 @@ resource "aws_ecr_repository" "services" {
   tags = local.tags
 }
 
-# Auto-delete old images (keep last 10)
+# Auto-delete old images beyond the configured retention count
 resource "aws_ecr_lifecycle_policy" "services" {
   for_each   = aws_ecr_repository.services
   repository = each.value.name
@@ -26,11 +26,11 @@ resource "aws_ecr_lifecycle_policy" "services" {
   policy = jsonencode({
     rules = [{
       rulePriority = 1
-      description  = "Keep last 10 images"
+      description  = "Keep last ${var.ecr_image_retention_count} images"
       selection = {
         tagStatus   = "any"
         countType   = "imageCountMoreThan"
-        countNumber = 10
+        countNumber = var.ecr_image_retention_count
       }
       action = { type = "expire" }
     }]
