@@ -215,6 +215,15 @@ EOT
   # SMTP secret reference (conditional)
   smtp_values = var.smtp_url != "" ? "smtp:\n  existingSecret: \"traceroot-smtp\"" : ""
 
+  # Sign-up follow-ups (conditional); plain settings, no secret
+  signup_values = !var.signup_enabled ? "" : <<EOT
+signup:
+  enabled: true
+  emailFrom: "${var.signup_email_from}"
+  emailReplyTo: "${var.signup_email_reply_to}"
+  resendProductTopicId: "${var.resend_product_topic_id}"
+EOT
+
   # Enterprise license secret reference (conditional)
   enterprise_values = var.enterprise_license_key != "" ? "enterprise:\n  existingSecret: \"traceroot-enterprise\"" : ""
 
@@ -300,6 +309,7 @@ resource "helm_release" "traceroot" {
     local.slack_values,
     local.google_oauth_values,
     local.smtp_values,
+    local.signup_values,
     local.enterprise_values,
     local.feature_values,
     local.additional_env_values,

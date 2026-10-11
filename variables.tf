@@ -96,7 +96,7 @@ variable "traceroot_helm_chart_repository" {
 variable "traceroot_helm_chart_version" {
   description = "Version of the TraceRoot Helm chart to deploy. Pin this; do not track latest."
   type        = string
-  default     = "1.0.0"
+  default     = "1.1.2"
 }
 
 # --- ClickHouse (EFS storage) ---
@@ -278,6 +278,31 @@ variable "smtp_url" {
 
 variable "smtp_mail_from" {
   description = "SMTP sender email address"
+  type        = string
+  default     = ""
+}
+
+# --- Sign-up follow-ups (welcome email + Slack post; chart `signup.*`) ---
+variable "signup_enabled" {
+  description = "Send the welcome email and the Slack post on sign-up (sets TRACEROOT_CLOUD=true on web)"
+  type        = bool
+  default     = false
+}
+
+variable "signup_email_from" {
+  description = "Welcome email sender, \"Name <address>\" on a domain verified with the email provider"
+  type        = string
+  default     = ""
+}
+
+variable "signup_email_reply_to" {
+  description = "Welcome email reply-to; replies and mailto opt-outs land here"
+  type        = string
+  default     = ""
+}
+
+variable "resend_product_topic_id" {
+  description = "Email provider topic that records welcome-email opt-outs"
   type        = string
   default     = ""
 }

@@ -83,6 +83,12 @@ cache_node_type = "cache.t4g.micro"
 # smtp_url       = "smtp://user:pass@host:587"
 # smtp_mail_from = "noreply@traceroot.ai"
 
+# Sign-up follow-ups (welcome email + Slack post)
+# signup_enabled          = true
+# signup_email_from       = "Name <name@updates.example.com>"
+# signup_email_reply_to   = "name@example.com"
+# resend_product_topic_id = "topic-id"
+
 # Enterprise License
 # enterprise_license_key = "traceroot_ee_..."
 
