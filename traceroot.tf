@@ -219,9 +219,9 @@ EOT
   signup_values = !var.signup_enabled ? "" : <<EOT
 signup:
   enabled: true
-  emailFrom: "${var.signup_email_from}"
-  emailReplyTo: "${var.signup_email_reply_to}"
-  resendProductTopicId: "${var.resend_product_topic_id}"
+  emailFrom: ${yamlencode(var.signup_email_from)}
+  emailReplyTo: ${yamlencode(var.signup_email_reply_to)}
+  resendProductTopicId: ${yamlencode(var.resend_product_topic_id)}
 EOT
 
   # Enterprise license secret reference (conditional)
@@ -287,6 +287,14 @@ EOT
     tonumber(local._chart_version_parts[0][0]) > 1 ||
     (tonumber(local._chart_version_parts[0][0]) == 1 && tonumber(local._chart_version_parts[0][1]) >= 1)
   )
+  _chart_semver = regexall("^v?(\\d+)\\.(\\d+)\\.(\\d+)", var.traceroot_helm_chart_version)
+  chart_carries_signup = length(local._chart_semver) == 0 ? true : (
+    tonumber(local._chart_semver[0][0]) > 1 ||
+    (tonumber(local._chart_semver[0][0]) == 1 && (
+      tonumber(local._chart_semver[0][1]) > 1 ||
+      (tonumber(local._chart_semver[0][1]) == 1 && tonumber(local._chart_semver[0][2]) >= 2)
+    ))
+  )
 }
 
 resource "helm_release" "traceroot" {
@@ -331,6 +339,10 @@ resource "helm_release" "traceroot" {
     precondition {
       condition     = !var.enable_sql_gateway || local.chart_carries_sql_gateway
       error_message = "enable_sql_gateway requires a traceroot chart that provides the provisioning hooks (1.1.0 or later); ${var.traceroot_helm_chart_version} would silently ignore it."
+    }
+    precondition {
+      condition     = !var.signup_enabled || local.chart_carries_signup
+      error_message = "signup_enabled requires a traceroot chart that declares signup values (1.1.2 or later); ${var.traceroot_helm_chart_version} would silently ignore it."
     }
   }
 
