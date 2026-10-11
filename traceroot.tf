@@ -219,9 +219,9 @@ EOT
   signup_values = !var.signup_enabled ? "" : <<EOT
 signup:
   enabled: true
-  emailFrom: ${yamlencode(var.signup_email_from)}
-  emailReplyTo: ${yamlencode(var.signup_email_reply_to)}
-  resendProductTopicId: ${yamlencode(var.resend_product_topic_id)}
+  emailFrom: ${jsonencode(var.signup_email_from)}
+  emailReplyTo: ${jsonencode(var.signup_email_reply_to)}
+  resendProductTopicId: ${jsonencode(var.resend_product_topic_id)}
 EOT
 
   # Enterprise license secret reference (conditional)
