@@ -37,6 +37,20 @@ Values you supply — Stripe, GitHub App, LLM provider keys — are passed as va
 Terraform state therefore contains secret material. Use a remote backend with encryption at
 rest, and never commit `.tfvars` or state files.
 
+## S3 lifecycle
+
+The bucket is versioned, and lifecycle rules expire the ingest objects under `events/`:
+
+| Prefix | Expires after | Input |
+|---|---|---|
+| `events/otel/` (staged ingest batches) | 7 days | `ingest_batch_expiration_days` |
+| `events/failed/` (batches that failed processing) | 30 days | `ingest_failed_expiration_days` |
+
+Once one of those objects expires, its noncurrent version is removed after 1 day
+(`noncurrent_version_expiration_days`), and the delete marker left behind is cleaned up.
+Incomplete multipart uploads under `events/otel/` are aborted after 1 day. Nothing else in the
+bucket expires.
+
 ## Requirements
 
 | | |
