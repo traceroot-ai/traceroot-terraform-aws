@@ -86,6 +86,40 @@ variable "cache_node_type" {
   default     = "cache.t4g.micro"
 }
 
+# --- S3 ---
+variable "ingest_batch_expiration_days" {
+  description = "Days to keep staged ingest batches (objects under events/otel/ in the S3 bucket) before they expire."
+  type        = number
+  default     = 7
+
+  validation {
+    condition     = var.ingest_batch_expiration_days >= 1 && floor(var.ingest_batch_expiration_days) == var.ingest_batch_expiration_days
+    error_message = "ingest_batch_expiration_days must be a whole number of days, at least 1."
+  }
+}
+
+variable "ingest_failed_expiration_days" {
+  description = "Days to keep ingest batches that failed processing (objects under events/failed/ in the S3 bucket) before they expire."
+  type        = number
+  default     = 30
+
+  validation {
+    condition     = var.ingest_failed_expiration_days >= 1 && floor(var.ingest_failed_expiration_days) == var.ingest_failed_expiration_days
+    error_message = "ingest_failed_expiration_days must be a whole number of days, at least 1."
+  }
+}
+
+variable "noncurrent_version_expiration_days" {
+  description = "Days to keep the noncurrent version of a staged or failed ingest batch once it has expired or been deleted. The bucket is versioned, so the batch's data is only removed when this version expires."
+  type        = number
+  default     = 1
+
+  validation {
+    condition     = var.noncurrent_version_expiration_days >= 1 && floor(var.noncurrent_version_expiration_days) == var.noncurrent_version_expiration_days
+    error_message = "noncurrent_version_expiration_days must be a whole number of days, at least 1."
+  }
+}
+
 # --- Helm ---
 variable "traceroot_helm_chart_repository" {
   description = "Helm repository serving the TraceRoot chart"
