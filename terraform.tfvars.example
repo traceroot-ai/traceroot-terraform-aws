@@ -41,6 +41,11 @@ postgres_max_capacity = 2.0
 # ElastiCache
 cache_node_type = "cache.t4g.micro"
 
+# S3 lifecycle (days before staged and failed ingest batches expire)
+# ingest_batch_expiration_days       = 7
+# ingest_failed_expiration_days      = 30
+# noncurrent_version_expiration_days = 1
+
 # Custom domain (leave empty to use ALB URL)
 # Staging example:  domain = "staging.traceroot.ai"
 # Production example: domain = "app.traceroot.ai"
