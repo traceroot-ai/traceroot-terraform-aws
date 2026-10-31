@@ -39,17 +39,19 @@ rest, and never commit `.tfvars` or state files.
 
 ## S3 lifecycle
 
-The bucket is versioned, and lifecycle rules expire the ingest objects under `events/`:
+The bucket is versioned, and lifecycle rules expire two ingest prefixes:
 
 | Prefix | Expires after | Input |
 |---|---|---|
-| `events/otel/` (staged ingest batches) | 7 days | `ingest_batch_expiration_days` |
+| `events/ingest/` (staged ingest batches) | 7 days | `ingest_batch_expiration_days` |
 | `events/failed/` (batches that failed processing) | 30 days | `ingest_failed_expiration_days` |
 
 Once one of those objects expires, its noncurrent version is removed after 1 day
 (`noncurrent_version_expiration_days`), and the delete marker left behind is cleaned up.
-Incomplete multipart uploads under `events/otel/` are aborted after 1 day. Nothing else in the
-bucket expires.
+Incomplete multipart uploads under `events/ingest/` are aborted after 1 day.
+
+Only `events/ingest/` and `events/failed/` expire. Everything else in the bucket is kept,
+including any batches under `events/otel/`.
 
 ## Requirements
 

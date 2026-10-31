@@ -29,11 +29,13 @@ resource "aws_s3_bucket_public_access_block" "traceroot" {
   restrict_public_buckets = true
 }
 
-# Only the ingest prefixes under events/ expire; nothing else in the bucket does.
-# The bucket is versioned, so expiring an object only hides it behind a delete
-# marker: the noncurrent-version rules remove the data, and the last rule removes
-# the marker once no versions remain. S3 rejects `days` and
-# `expired_object_delete_marker` in one expiration block, hence the separate rule.
+# Only events/ingest/ and events/failed/ expire. Every rule filters on one of
+# those prefixes rather than on events/, so nothing else in the bucket expires,
+# including any batches under events/otel/. The bucket is versioned, so expiring
+# an object only hides it behind a delete marker: the noncurrent-version rules
+# remove the data, and the marker rules remove the marker once no versions
+# remain. S3 rejects `days` and `expired_object_delete_marker` in one expiration
+# block, hence a separate marker rule per prefix.
 resource "aws_s3_bucket_lifecycle_configuration" "traceroot" {
   bucket = aws_s3_bucket.traceroot.id
 
@@ -45,7 +47,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "traceroot" {
     status = "Enabled"
 
     filter {
-      prefix = "events/otel/"
+      prefix = "events/ingest/"
     }
 
     expiration {
@@ -79,11 +81,24 @@ resource "aws_s3_bucket_lifecycle_configuration" "traceroot" {
   }
 
   rule {
-    id     = "remove-expired-delete-markers"
+    id     = "remove-ingest-batch-delete-markers"
     status = "Enabled"
 
     filter {
-      prefix = "events/"
+      prefix = "events/ingest/"
+    }
+
+    expiration {
+      expired_object_delete_marker = true
+    }
+  }
+
+  rule {
+    id     = "remove-ingest-failed-delete-markers"
+    status = "Enabled"
+
+    filter {
+      prefix = "events/failed/"
     }
 
     expiration {

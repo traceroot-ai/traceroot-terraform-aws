@@ -88,7 +88,7 @@ variable "cache_node_type" {
 
 # --- S3 ---
 variable "ingest_batch_expiration_days" {
-  description = "Days to keep staged ingest batches (objects under events/otel/ in the S3 bucket) before they expire."
+  description = "Days to keep staged ingest batches (objects under events/ingest/ in the S3 bucket) before they expire. Objects under events/otel/ are not expired."
   type        = number
   default     = 7
 
