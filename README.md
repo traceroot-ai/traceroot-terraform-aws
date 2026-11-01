@@ -53,6 +53,16 @@ Incomplete multipart uploads under `events/ingest/` are aborted after 1 day.
 Only `events/ingest/` and `events/failed/` expire. Everything else in the bucket is kept,
 including any batches under `events/otel/`.
 
+Ages count from when each object was written (for a noncurrent version, from when it became
+noncurrent), not from when the rules were applied. An object already under `events/ingest/` or
+`events/failed/` and older than its window when the rules are first applied expires shortly
+after the apply, not 7 or 30 days later.
+
+This module manages the bucket's whole lifecycle configuration. S3 keeps one lifecycle
+configuration per bucket, so applying the module replaces any lifecycle rule set outside it,
+whether in the console, with the AWS CLI or by another `aws_s3_bucket_lifecycle_configuration`.
+To keep a custom rule, add it to `aws_s3_bucket_lifecycle_configuration.traceroot` in `s3.tf`.
+
 ## Requirements
 
 | | |

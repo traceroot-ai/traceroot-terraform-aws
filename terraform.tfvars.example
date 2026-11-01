@@ -41,9 +41,11 @@ postgres_max_capacity = 2.0
 # ElastiCache
 cache_node_type = "cache.t4g.micro"
 
-# S3 lifecycle (days before staged and failed ingest batches expire)
+# S3 lifecycle
+# Days before staged and failed ingest batches expire
 # ingest_batch_expiration_days       = 7
 # ingest_failed_expiration_days      = 30
+# Days an expired or deleted batch is kept as a noncurrent version before it is removed
 # noncurrent_version_expiration_days = 1
 
 # Custom domain (leave empty to use ALB URL)
