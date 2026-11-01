@@ -110,7 +110,7 @@ variable "ingest_failed_expiration_days" {
 }
 
 variable "noncurrent_version_expiration_days" {
-  description = "Days to keep the noncurrent version of a staged or failed ingest batch once it has expired or been deleted. The bucket is versioned, so the batch's data is only removed when this version expires."
+  description = "Days to keep every noncurrent version of an object under events/ingest/ or events/failed/ in the S3 bucket, whether the object expired, was deleted or was overwritten. The bucket is versioned, so an expired or deleted batch's data is only removed when its noncurrent version expires."
   type        = number
   default     = 1
 

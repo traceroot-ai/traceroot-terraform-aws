@@ -46,8 +46,10 @@ The bucket is versioned, and lifecycle rules expire two ingest prefixes:
 | `events/ingest/` (staged ingest batches) | 7 days | `ingest_batch_expiration_days` |
 | `events/failed/` (batches that failed processing) | 30 days | `ingest_failed_expiration_days` |
 
-Once one of those objects expires, its noncurrent version is removed after 1 day
-(`noncurrent_version_expiration_days`), and the delete marker left behind is cleaned up.
+Every noncurrent version under those prefixes is removed after 1 day
+(`noncurrent_version_expiration_days`), whether its object expired, was deleted or was
+overwritten, so no older version is kept there longer than that. The delete marker an expired
+or deleted object leaves behind is then cleaned up.
 Incomplete multipart uploads under `events/ingest/` are aborted after 1 day.
 
 Only `events/ingest/` and `events/failed/` expire. Everything else in the bucket is kept,
