@@ -212,6 +212,9 @@ EOT
   # Google OAuth secret reference (conditional)
   google_oauth_values = var.google_oauth_client_id != "" ? "googleOAuth:\n  existingSecret: \"traceroot-google-oauth\"" : ""
 
+  # AgentID OAuth secret reference (conditional)
+  agentid_oauth_values = var.agentid_oauth_client_id != "" ? "agentidOAuth:\n  existingSecret: \"traceroot-agentid-oauth\"" : ""
+
   # SMTP secret reference (conditional)
   smtp_values = var.smtp_url != "" ? "smtp:\n  existingSecret: \"traceroot-smtp\"" : ""
 
@@ -272,12 +275,11 @@ sqlGateway:
   enabled: true
 EOT
 
-  # Parsed leniently: a version this cannot read is left alone rather than blocked.
-  _chart_version_parts = regexall("^v?(\\d+)\\.(\\d+)", var.traceroot_helm_chart_version)
-  chart_carries_sql_gateway = length(local._chart_version_parts) == 0 ? true : (
-    tonumber(local._chart_version_parts[0][0]) > 1 ||
-    (tonumber(local._chart_version_parts[0][0]) == 1 && tonumber(local._chart_version_parts[0][1]) >= 1)
-  )
+  # Chart version as one comparable number (1.1.3 -> 1001003); unreadable versions are not blocked.
+  _chart_semver               = try(regex("^v?(\\d+)\\.(\\d+)\\.(\\d+)", var.traceroot_helm_chart_version), null)
+  _chart_v                    = try(local._chart_semver[0] * 1000000 + local._chart_semver[1] * 1000 + local._chart_semver[2], null)
+  chart_carries_sql_gateway   = try(local._chart_v >= 1001000, true)
+  chart_carries_agentid_oauth = try(local._chart_v >= 1001003, true)
 }
 
 resource "helm_release" "traceroot" {
@@ -299,6 +301,7 @@ resource "helm_release" "traceroot" {
     local.stripe_values,
     local.slack_values,
     local.google_oauth_values,
+    local.agentid_oauth_values,
     local.smtp_values,
     local.enterprise_values,
     local.feature_values,
@@ -321,6 +324,10 @@ resource "helm_release" "traceroot" {
     precondition {
       condition     = !var.enable_sql_gateway || local.chart_carries_sql_gateway
       error_message = "enable_sql_gateway requires a traceroot chart that provides the provisioning hooks (1.1.0 or later); ${var.traceroot_helm_chart_version} would silently ignore it."
+    }
+    precondition {
+      condition     = var.agentid_oauth_client_id == "" || local.chart_carries_agentid_oauth
+      error_message = "agentid_oauth_client_id requires traceroot chart 1.1.3 or later; ${var.traceroot_helm_chart_version} would silently ignore it."
     }
   }
 
