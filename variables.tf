@@ -302,6 +302,20 @@ variable "google_oauth_client_secret" {
   default     = ""
 }
 
+# --- AgentID OAuth (sign-in for AI agents) ---
+variable "agentid_oauth_client_id" {
+  description = "AgentID OAuth client ID (register an app at console.agentid.com with callback https://<domain>/api/auth/callback/agentid)"
+  type        = string
+  default     = ""
+}
+
+variable "agentid_oauth_client_secret" {
+  description = "AgentID OAuth client secret"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
 # --- Email / SMTP ---
 variable "smtp_url" {
   description = "SMTP URL (e.g. smtp://user:pass@host:port)"

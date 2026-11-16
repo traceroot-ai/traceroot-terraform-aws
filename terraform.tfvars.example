@@ -70,6 +70,10 @@ cache_node_type = "cache.t4g.micro"
 # google_oauth_client_id     = "123456.apps.googleusercontent.com"
 # google_oauth_client_secret = "GOCSPX-..."
 
+# AgentID OAuth (sign-in for AI agents; needs Helm chart >= 1.1.3)
+# agentid_oauth_client_id     = "..."
+# agentid_oauth_client_secret = "..."
+
 # Stripe Billing
 # Note: Use test keys for staging, live keys for production
 # stripe_secret_key              = "sk_test_..."

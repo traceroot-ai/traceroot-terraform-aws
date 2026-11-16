@@ -192,6 +192,23 @@ resource "kubernetes_secret" "google_oauth" {
   depends_on = [module.eks]
 }
 
+# AgentID OAuth secret (conditional)
+resource "kubernetes_secret" "agentid_oauth" {
+  count = var.manage_app_secrets && var.agentid_oauth_client_id != "" ? 1 : 0
+
+  metadata {
+    name      = "traceroot-agentid-oauth"
+    namespace = kubernetes_namespace.app.metadata[0].name
+  }
+
+  data = {
+    "agentid-client-id"     = var.agentid_oauth_client_id
+    "agentid-client-secret" = var.agentid_oauth_client_secret
+  }
+
+  depends_on = [module.eks]
+}
+
 # SMTP secret (conditional)
 resource "kubernetes_secret" "smtp" {
   count = var.manage_app_secrets && var.smtp_url != "" ? 1 : 0
