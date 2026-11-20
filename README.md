@@ -1,6 +1,6 @@
 # traceroot-terraform-aws
 
-Terraform module to deploy [TraceRoot](https://github.com/traceroot-ai/traceroot) on AWS.
+Terraform module to deploy [traceroot](https://github.com/traceroot-ai/traceroot) on AWS.
 
 Provisions the VPC, EKS cluster, RDS (PostgreSQL), ElastiCache (Redis), ECR, S3, EFS, ACM and
 ALB ingress, then installs the

@@ -122,13 +122,13 @@ variable "ingest_noncurrent_version_expiration_days" {
 
 # --- Helm ---
 variable "traceroot_helm_chart_repository" {
-  description = "Helm repository serving the TraceRoot chart"
+  description = "Helm repository serving the traceroot chart"
   type        = string
   default     = "https://traceroot-ai.github.io/traceroot-k8s"
 }
 
 variable "traceroot_helm_chart_version" {
-  description = "Version of the TraceRoot Helm chart to deploy. Pin this; do not track latest. Charts before 1.0.1 omit the ALB health-check paths, so every target is unhealthy."
+  description = "Version of the traceroot Helm chart to deploy. Pin this; do not track latest. Charts before 1.0.1 omit the ALB health-check paths, so every target is unhealthy."
   type        = string
   default     = "1.1.2"
 }
@@ -492,7 +492,7 @@ variable "alb_scheme" {
 #     }},
 #   ]
 variable "additional_env" {
-  description = "Additional environment variables for all TraceRoot pods"
+  description = "Additional environment variables for all traceroot pods"
   type = list(object({
     name  = string
     value = optional(string)

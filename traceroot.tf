@@ -1,5 +1,5 @@
 # deploy/terraform/aws/traceroot.tf
-# Helm release for the TraceRoot application
+# Helm release for the traceroot application
 # All Helm values inline from Terraform outputs
 
 locals {
