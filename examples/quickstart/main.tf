@@ -1,4 +1,4 @@
-# Minimal example: deploy TraceRoot on AWS.
+# Minimal example: deploy traceroot on AWS.
 #
 #   terraform init
 #   terraform apply -var domain=traceroot.example.com
