@@ -174,7 +174,7 @@ ingress:
     alb.ingress.kubernetes.io/target-type: ip
     alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80},{"HTTPS":443}]'
     alb.ingress.kubernetes.io/ssl-redirect: "443"
-    alb.ingress.kubernetes.io/certificate-arn: "${var.domain != "" ? aws_acm_certificate.app[0].arn : ""}"
+    alb.ingress.kubernetes.io/certificate-arn: "${var.domain != "" ? join(",", compact([aws_acm_certificate.app[0].arn, local.mcp_certificate_arn])) : ""}"
 EOT
 
   ingress_values_http = <<-EOT
@@ -189,6 +189,20 @@ ingress:
 EOT
 
   ingress_values = var.domain != "" ? local.ingress_values_https : local.ingress_values_http
+
+  # Hosted MCP server (dns.tf): its hostname, image and directory-verification values.
+  mcp_values = !local.mcp_enabled ? "" : <<-EOT
+mcp:
+  enabled: true
+  host: ${jsonencode(var.mcp_domain)}
+  image:
+    repository: ${aws_ecr_repository.services["mcp"].repository_url}
+    tag: ${var.image_tag}
+  openaiAppsChallenge: ${jsonencode(var.mcp_openai_apps_challenge)}
+  googleConnectedAppsTokens: ${jsonencode(var.mcp_google_connected_apps_tokens)}
+EOT
+
+  web_proxy_values = var.web_trusted_proxy_cidrs == "" ? "" : "web:\n  trustedProxyCidrs: ${jsonencode(var.web_trusted_proxy_cidrs)}"
 
   # GitHub secret reference (conditional)
   github_values = var.github_app_id != "" ? "github:\n  existingSecret: \"traceroot-github\"" : ""
@@ -280,6 +294,7 @@ EOT
   _chart_v                    = try(local._chart_semver[0] * 1000000 + local._chart_semver[1] * 1000 + local._chart_semver[2], null)
   chart_carries_sql_gateway   = try(local._chart_v >= 1001000, true)
   chart_carries_agentid_oauth = try(local._chart_v >= 1001003, true)
+  chart_carries_mcp           = try(local._chart_v >= 1002000, true)
 }
 
 resource "helm_release" "traceroot" {
@@ -308,6 +323,8 @@ resource "helm_release" "traceroot" {
     local.additional_env_values,
     local.clickhouse_log_table_overrides,
     local.sql_gateway_values,
+    local.mcp_values,
+    local.web_proxy_values,
   ])
 
   # Ensure global.security.allowInsecureImages is set for bitnamilegacy images
@@ -324,6 +341,10 @@ resource "helm_release" "traceroot" {
     precondition {
       condition     = !var.enable_sql_gateway || local.chart_carries_sql_gateway
       error_message = "enable_sql_gateway requires a traceroot chart that provides the provisioning hooks (1.1.0 or later); ${var.traceroot_helm_chart_version} would silently ignore it."
+    }
+    precondition {
+      condition     = !local.mcp_enabled || local.chart_carries_mcp
+      error_message = "mcp_domain requires traceroot chart 1.2.0 or later; ${var.traceroot_helm_chart_version} would silently ignore it."
     }
     precondition {
       condition     = var.agentid_oauth_client_id == "" || local.chart_carries_agentid_oauth

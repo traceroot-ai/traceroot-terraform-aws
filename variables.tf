@@ -171,6 +171,36 @@ variable "domain" {
   default     = ""
 }
 
+# --- Hosted MCP server ---
+variable "mcp_domain" {
+  description = "Hostname of the hosted MCP server; AI assistants connect at https://<mcp_domain>/mcp and sign in with the app. Empty = not deployed. Needs domain. A name under domain (e.g. mcp.app.traceroot.ai) gets its records in the app's zone; any other name needs the records in the mcp_dns_records output added where its zone lives. Needs traceroot_helm_chart_version 1.2.0 or later."
+  type        = string
+  default     = ""
+
+  validation {
+    condition     = var.mcp_domain == "" || can(regex("^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$", var.mcp_domain))
+    error_message = "mcp_domain is a bare lowercase hostname, without a scheme, port or path."
+  }
+}
+
+variable "mcp_openai_apps_challenge" {
+  description = "Domain-verification token from the OpenAI apps dashboard, served at /.well-known/openai-apps-challenge on mcp_domain. Empty serves 404."
+  type        = string
+  default     = ""
+}
+
+variable "mcp_google_connected_apps_tokens" {
+  description = "Comma-separated domain-verification tokens from the Google Connected Console, served at /.well-known/google-connected-apps on mcp_domain. Empty serves 404."
+  type        = string
+  default     = ""
+}
+
+variable "web_trusted_proxy_cidrs" {
+  description = "Comma-separated CIDRs of the proxies in front of the web app (usually vpc_cidr, where the load balancer lives), so its sign-in and client-registration rate limits key on the real client address. Empty trusts none."
+  type        = string
+  default     = ""
+}
+
 
 # --- GitHub App ---
 variable "github_app_id" {

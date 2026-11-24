@@ -73,3 +73,72 @@ resource "aws_route53_record" "app" {
     evaluate_target_health = true
   }
 }
+
+# --- Hosted MCP server: its own hostname on the same load balancer ---
+
+locals {
+  mcp_enabled = var.domain != "" && var.mcp_domain != ""
+  # The app's zone is var.domain itself, so only names under it can be managed here.
+  mcp_in_app_zone = local.mcp_enabled && trimsuffix(var.mcp_domain, ".${var.domain}") != var.mcp_domain
+}
+
+resource "aws_acm_certificate" "mcp" {
+  count             = local.mcp_enabled ? 1 : 0
+  domain_name       = var.mcp_domain
+  validation_method = "DNS"
+
+  lifecycle {
+    create_before_destroy = true
+  }
+
+  tags = local.tags
+}
+
+resource "aws_route53_record" "mcp_cert_validation" {
+  for_each = local.mcp_in_app_zone ? {
+    for dvo in aws_acm_certificate.mcp[0].domain_validation_options : dvo.domain_name => {
+      name   = dvo.resource_record_name
+      record = dvo.resource_record_value
+      type   = dvo.resource_record_type
+    }
+  } : {}
+
+  zone_id         = aws_route53_zone.app[0].zone_id
+  name            = each.value.name
+  type            = each.value.type
+  records         = [each.value.record]
+  ttl             = 60
+  allow_overwrite = true
+}
+
+resource "aws_acm_certificate_validation" "mcp" {
+  count                   = local.mcp_in_app_zone ? 1 : 0
+  certificate_arn         = aws_acm_certificate.mcp[0].arn
+  validation_record_fqdns = [for record in aws_route53_record.mcp_cert_validation : record.fqdn]
+}
+
+resource "aws_route53_record" "mcp" {
+  count   = local.mcp_in_app_zone ? 1 : 0
+  zone_id = aws_route53_zone.app[0].zone_id
+  name    = var.mcp_domain
+  type    = "A"
+
+  alias {
+    name                   = data.aws_lb.ingress[0].dns_name
+    zone_id                = data.aws_lb.ingress[0].zone_id
+    evaluate_target_health = true
+  }
+}
+
+locals {
+  # The listener gets the MCP certificate only once it is issued: an unissued
+  # certificate on the ingress would stop the controller reconciling the whole
+  # load balancer, app included. In the app's zone, validation is waited for;
+  # outside it, the certificate is added on the first apply after the
+  # validation record from mcp_dns_records exists.
+  mcp_certificate_arn = (
+    local.mcp_in_app_zone ? aws_acm_certificate_validation.mcp[0].certificate_arn :
+    local.mcp_enabled && try(aws_acm_certificate.mcp[0].status, "") == "ISSUED" ? aws_acm_certificate.mcp[0].arn :
+    ""
+  )
+}

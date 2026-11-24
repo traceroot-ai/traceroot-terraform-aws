@@ -85,3 +85,27 @@ output "helm_release_status" {
   description = "Helm release status"
   value       = helm_release.traceroot.status
 }
+
+output "mcp_url" {
+  description = "URL AI assistants connect to; empty when the MCP server is not deployed"
+  value       = local.mcp_enabled ? "https://${var.mcp_domain}/mcp" : ""
+}
+
+output "mcp_dns_records" {
+  description = "Records to add by hand where mcp_domain's zone lives, when it is outside the app's zone: the certificate validation record, then the hostname pointing at the load balancer. Apply again once the certificate is issued."
+  value = local.mcp_enabled && !local.mcp_in_app_zone ? {
+    certificate_validation = [
+      for dvo in aws_acm_certificate.mcp[0].domain_validation_options : {
+        name  = dvo.resource_record_name
+        type  = dvo.resource_record_type
+        value = dvo.resource_record_value
+      }
+    ]
+    endpoint = {
+      name  = var.mcp_domain
+      type  = "CNAME"
+      value = try(data.aws_lb.ingress[0].dns_name, "")
+    }
+    certificate_issued = try(aws_acm_certificate.mcp[0].status, "") == "ISSUED"
+  } : null
+}
