@@ -1,4 +1,3 @@
-# deploy/terraform/aws/efs.tf
 # EFS for ClickHouse persistent storage on Fargate
 
 resource "aws_efs_file_system" "traceroot" {

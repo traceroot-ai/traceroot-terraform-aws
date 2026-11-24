@@ -1,4 +1,3 @@
-# deploy/terraform/aws/locals.tf
 
 data "aws_availability_zones" "available" {
   state = "available"

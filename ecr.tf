@@ -1,4 +1,3 @@
-# deploy/terraform/aws/ecr.tf
 
 locals {
   services = ["web", "rest", "worker", "billing", "agent", "detector", "migrate-clickhouse", "migrate-postgres"]

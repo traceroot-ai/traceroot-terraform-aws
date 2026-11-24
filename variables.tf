@@ -1,4 +1,3 @@
-# deploy/terraform/aws/variables.tf
 
 variable "name" {
   description = "Name prefix for all resources"

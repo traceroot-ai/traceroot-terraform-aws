@@ -1,4 +1,3 @@
-# deploy/terraform/aws/rds_alarms.tf
 # RDS CloudWatch alarms + notification topic (SOC 2 monitoring).
 #
 # These were applied out-of-band earlier (present in state, absent from committed

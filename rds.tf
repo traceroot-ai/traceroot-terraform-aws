@@ -1,4 +1,3 @@
-# deploy/terraform/aws/rds.tf
 
 resource "random_password" "postgres" {
   length  = 32
