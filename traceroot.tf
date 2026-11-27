@@ -343,6 +343,14 @@ resource "helm_release" "traceroot" {
       error_message = "enable_sql_gateway requires a traceroot chart that provides the provisioning hooks (1.1.0 or later); ${var.traceroot_helm_chart_version} would silently ignore it."
     }
     precondition {
+      condition     = var.mcp_domain == "" || var.domain != ""
+      error_message = "mcp_domain needs domain: the OAuth issuer and the MCP certificate are derived from the app's own hostname."
+    }
+    precondition {
+      condition     = var.mcp_domain == "" || var.mcp_domain != var.domain
+      error_message = "mcp_domain must differ from domain: the MCP server takes every path on its own hostname."
+    }
+    precondition {
       condition     = !local.mcp_enabled || local.chart_carries_mcp
       error_message = "mcp_domain requires traceroot chart 1.2.0 or later; ${var.traceroot_helm_chart_version} would silently ignore it."
     }

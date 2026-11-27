@@ -173,13 +173,13 @@ variable "domain" {
 
 # --- Hosted MCP server ---
 variable "mcp_domain" {
-  description = "Hostname of the hosted MCP server; AI assistants connect at https://<mcp_domain>/mcp and sign in with the app. Empty = not deployed. Needs domain. A name under domain (e.g. mcp.app.traceroot.ai) gets its records in the app's zone; any other name needs the records in the mcp_dns_records output added where its zone lives. Needs traceroot_helm_chart_version 1.2.0 or later."
+  description = "Hostname of the hosted MCP server; AI assistants connect at https://<mcp_domain>/mcp and sign in with the app. Empty = not deployed. Needs domain. A name under domain (e.g. mcp.app.traceroot.ai) gets its records in the app's zone; any other name needs the records in the mcp_dns_records output added where its zone lives; use a subdomain there, since the hostname record is a CNAME, which a zone apex cannot hold. Needs traceroot_helm_chart_version 1.2.0 or later."
   type        = string
   default     = ""
 
   validation {
-    condition     = var.mcp_domain == "" || can(regex("^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$", var.mcp_domain))
-    error_message = "mcp_domain is a bare lowercase hostname, without a scheme, port or path."
+    condition     = var.mcp_domain == "" || (length(var.mcp_domain) <= 253 && can(regex("^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)+$", var.mcp_domain)))
+    error_message = "mcp_domain is a bare lowercase hostname (labels of at most 63 characters, 253 in all), without a scheme, port or path."
   }
 }
 
