@@ -1,7 +1,7 @@
 # deploy/terraform/aws/ecr.tf
 
 locals {
-  services = ["web", "rest", "worker", "billing", "agent", "detector", "migrate-clickhouse", "migrate-postgres"]
+  services = ["web", "rest", "worker", "billing", "agent", "mcp", "detector", "migrate-clickhouse", "migrate-postgres"]
 
   # The deploy pipeline moves this tag onto the build it just rolled out, so the
   # lifecycle policy never expires the image the cluster is running.

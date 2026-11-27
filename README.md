@@ -96,6 +96,29 @@ module "traceroot" {
 In a `.tfvars` file, put the same assignment at the top level. The defaults and accepted values
 are in [`variables.tf`](variables.tf).
 
+## Hosted MCP server
+
+`mcp_domain` deploys the MCP server that AI assistants (Claude, ChatGPT, Cursor, Gemini) connect
+to at `https://<mcp_domain>/mcp`, on the app's load balancer under its own hostname. Users sign in
+with the app and pick one project; the server only reads. It needs `domain` and chart 1.2.0 or
+later:
+
+```hcl
+module "traceroot" {
+  # ...
+
+  traceroot_helm_chart_version = "1.2.0"
+  mcp_domain                   = "mcp.app.example.com"
+  web_trusted_proxy_cidrs      = "10.0.0.0/16" # vpc_cidr: the load balancer's range
+}
+```
+
+A name under `domain` gets its certificate and DNS record in the app's zone. Any other name gets a
+certificate whose validation record, and the hostname's own record, are in the `mcp_dns_records`
+output: add them where that name's zone lives, then apply again to attach the certificate once it
+is issued. `mcp_openai_apps_challenge` and `mcp_google_connected_apps_tokens` serve the
+domain-verification files that the ChatGPT and Gemini app directories check.
+
 ## Requirements
 
 | | |
