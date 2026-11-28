@@ -1,4 +1,3 @@
-# deploy/terraform/aws/outputs.tf
 
 output "environment" {
   description = "Active environment"

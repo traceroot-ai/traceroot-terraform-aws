@@ -1,4 +1,3 @@
-# deploy/terraform/aws/elasticache.tf
 
 resource "random_password" "redis" {
   length  = 32

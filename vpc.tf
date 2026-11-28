@@ -1,4 +1,3 @@
-# deploy/terraform/aws/vpc.tf
 
 module "vpc" {
   source  = "terraform-aws-modules/vpc/aws"

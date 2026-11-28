@@ -1,4 +1,3 @@
-# deploy/terraform/aws/ingress.tf
 
 # IRSA role for ALB controller
 module "lb_controller_irsa" {

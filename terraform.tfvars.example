@@ -1,4 +1,3 @@
-# deploy/terraform/aws/terraform.tfvars.example
 #
 # Copy to a named tfvars file for your environment:
 #   cp terraform.tfvars.example staging.tfvars    # edit for staging

@@ -28,6 +28,16 @@ Pin `ref` to a tag rather than tracking `main`, so environments upgrade delibera
 See [`examples/quickstart`](examples/quickstart) for a runnable example and
 [`variables.tf`](variables.tf) for every input.
 
+## ClickHouse
+
+PostgreSQL (RDS) and Redis (ElastiCache) are managed AWS services. ClickHouse is not: the
+Helm chart runs it in the cluster, and this module provides its storage on encrypted EFS.
+Size it with `clickhouse_replica_count` and `clickhouse_storage_size` (see
+[`variables.tf`](variables.tf)).
+
+For the self-hosting overview, see the
+[self-hosting guide](https://traceroot.ai/docs/developer/self-hosting).
+
 ## Secrets
 
 This module **generates** the application's internal secrets (session signing, internal API,

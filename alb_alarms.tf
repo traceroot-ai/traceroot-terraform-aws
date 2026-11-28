@@ -1,4 +1,3 @@
-# deploy/terraform/aws/alb_alarms.tf
 # ALB CloudWatch alarms + notification topic (SOC 2 "infrastructure performance
 # monitored": errors, latency and unhealthy targets on the public entrypoint).
 #

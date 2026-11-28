@@ -1,4 +1,3 @@
-# deploy/terraform/aws/versions.tf
 terraform {
   # 1.3, not 1.0: object type constraints use optional(), which is 1.3, and the
   # SQL-gateway guard uses a lifecycle precondition, which is 1.2. The old floor
